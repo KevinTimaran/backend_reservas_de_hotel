@@ -1,8 +1,15 @@
 HELP.md
 target/
-.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Java build outputs
+out/
 
 ### STS ###
 .apt_generated

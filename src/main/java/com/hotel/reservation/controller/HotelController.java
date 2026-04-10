@@ -1,9 +1,9 @@
 package com.hotel.reservation.controller;
 
-import com.hotel.reservation.dto.ReservaDTO;
-import com.hotel.reservation.dto.ReservaResponseDTO;
+import com.hotel.reservation.dto.ReservationRequestDTO;
+import com.hotel.reservation.dto.ReservationResponseDTO;
 import com.hotel.reservation.facade.HotelFacade;
-import com.hotel.reservation.model.Habitacion;
+import com.hotel.reservation.model.Room;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/hotel")
+@RequestMapping("/api/hotels")
 public class HotelController {
 
     private final HotelFacade hotelFacade;
@@ -24,14 +24,14 @@ public class HotelController {
         this.hotelFacade = hotelFacade;
     }
 
-    @GetMapping("/habitaciones")
-    public ResponseEntity<List<Habitacion>> listarHabitaciones() {
-        return ResponseEntity.ok(hotelFacade.listarHabitaciones());
+    @GetMapping("/rooms")
+    public ResponseEntity<List<Room>> listRooms() {
+        return ResponseEntity.ok(hotelFacade.listRooms());
     }
 
-    @PostMapping("/reservas")
-    public ResponseEntity<ReservaResponseDTO> crearReserva(@RequestBody ReservaDTO reservaDTO) {
-        ReservaResponseDTO response = hotelFacade.crearReserva(reservaDTO);
+    @PostMapping("/reservations")
+    public ResponseEntity<ReservationResponseDTO> createReservation(@RequestBody ReservationRequestDTO reservationRequestDTO) {
+        ReservationResponseDTO response = hotelFacade.createReservation(reservationRequestDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }

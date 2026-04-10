@@ -1,9 +1,9 @@
 package com.hotel.reservation.config;
 
-import com.hotel.reservation.enums.EstadoHabitacion;
-import com.hotel.reservation.enums.TipoHabitacion;
-import com.hotel.reservation.model.Habitacion;
-import com.hotel.reservation.repository.HabitacionRepository;
+import com.hotel.reservation.enums.RoomStatus;
+import com.hotel.reservation.enums.RoomType;
+import com.hotel.reservation.model.Room;
+import com.hotel.reservation.repository.RoomRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,35 +15,35 @@ import java.util.List;
 public class DataInitializer {
 
     @Bean
-    public CommandLineRunner preloadRooms(HabitacionRepository habitacionRepository) {
+    public CommandLineRunner preloadRooms(RoomRepository roomRepository) {
         return args -> {
-            if (!habitacionRepository.findAll().isEmpty()) {
+            if (!roomRepository.findAll().isEmpty()) {
                 return;
             }
 
-            List<Habitacion> habitaciones = new ArrayList<>();
+            List<Room> rooms = new ArrayList<>();
             for (int i = 1; i <= 15; i++) {
-                TipoHabitacion tipo;
+                RoomType roomType;
                 if (i <= 5) {
-                    tipo = TipoHabitacion.SENCILLA;
+                    roomType = RoomType.SINGLE;
                 } else if (i <= 10) {
-                    tipo = TipoHabitacion.DOBLE;
+                    roomType = RoomType.DOUBLE;
                 } else {
-                    tipo = TipoHabitacion.SUITE;
+                    roomType = RoomType.SUITE;
                 }
 
-                Habitacion habitacion = new Habitacion(
+                Room room = new Room(
                         (long) i,
                         String.valueOf(100 + i),
-                        tipo,
-                        EstadoHabitacion.DISPONIBLE,
+                        roomType,
+                        RoomStatus.AVAILABLE,
                         100.0 + (i * 10)
                 );
-                habitaciones.add(habitacion);
+                rooms.add(room);
             }
 
-            // TODO: Externalizar semilla de datos cuando exista una capa de persistencia real.
-            habitacionRepository.saveAll(habitaciones);
+            // TODO: Externalize data seed when real persistence layer exists.
+            roomRepository.saveAll(rooms);
         };
     }
 }

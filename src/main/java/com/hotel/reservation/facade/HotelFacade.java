@@ -1,19 +1,19 @@
 package com.hotel.reservation.facade;
 
-import com.hotel.reservation.dto.ReservaDTO;
-import com.hotel.reservation.dto.ReservaResponseDTO;
-import com.hotel.reservation.enums.EstadoHabitacion;
-import com.hotel.reservation.enums.EstadoReserva;
+import com.hotel.reservation.dto.ReservationRequestDTO;
+import com.hotel.reservation.dto.ReservationResponseDTO;
+import com.hotel.reservation.enums.RoomStatus;
+import com.hotel.reservation.enums.ReservationStatus;
 import com.hotel.reservation.exception.BadRequestException;
-import com.hotel.reservation.model.Habitacion;
-import com.hotel.reservation.model.Reserva;
-import com.hotel.reservation.model.ServicioAdicional;
-import com.hotel.reservation.repository.ReservaRepository;
-import com.hotel.reservation.service.AccesoService;
-import com.hotel.reservation.service.FacturacionService;
-import com.hotel.reservation.service.HabitacionService;
-import com.hotel.reservation.service.ServicioAdicionalService;
-import com.hotel.reservation.service.TarifaService;
+import com.hotel.reservation.model.Room;
+import com.hotel.reservation.model.Reservation;
+import com.hotel.reservation.model.AdditionalService;
+import com.hotel.reservation.repository.ReservationRepository;
+import com.hotel.reservation.service.AccessService;
+import com.hotel.reservation.service.BillingService;
+import com.hotel.reservation.service.RoomService;
+import com.hotel.reservation.service.AdditionalServiceService;
+import com.hotel.reservation.service.RateService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,61 +21,61 @@ import java.util.List;
 @Service
 public class HotelFacade {
 
-    private final HabitacionService habitacionService;
-    private final TarifaService tarifaService;
-    private final ServicioAdicionalService servicioAdicionalService;
-    private final FacturacionService facturacionService;
-    private final AccesoService accesoService;
-    private final ReservaRepository reservaRepository;
+    private final RoomService roomService;
+    private final RateService rateService;
+    private final AdditionalServiceService additionalServiceService;
+    private final BillingService billingService;
+    private final AccessService accessService;
+    private final ReservationRepository reservationRepository;
 
-    public HotelFacade(HabitacionService habitacionService, TarifaService tarifaService,
-                       ServicioAdicionalService servicioAdicionalService, FacturacionService facturacionService,
-                       AccesoService accesoService, ReservaRepository reservaRepository) {
-        this.habitacionService = habitacionService;
-        this.tarifaService = tarifaService;
-        this.servicioAdicionalService = servicioAdicionalService;
-        this.facturacionService = facturacionService;
-        this.accesoService = accesoService;
-        this.reservaRepository = reservaRepository;
+    public HotelFacade(RoomService roomService, RateService rateService,
+                       AdditionalServiceService additionalServiceService, BillingService billingService,
+                       AccessService accessService, ReservationRepository reservationRepository) {
+        this.roomService = roomService;
+        this.rateService = rateService;
+        this.additionalServiceService = additionalServiceService;
+        this.billingService = billingService;
+        this.accessService = accessService;
+        this.reservationRepository = reservationRepository;
     }
 
-    public List<Habitacion> listarHabitaciones() {
-        return habitacionService.obtenerTodas();
+    public List<Room> listRooms() {
+        return roomService.getAll();
     }
 
-    public ReservaResponseDTO crearReserva(ReservaDTO reservaDTO) {
-        Habitacion habitacion = habitacionService.obtenerPorId(reservaDTO.getHabitacionId());
-        if (habitacion.getEstado() != EstadoHabitacion.DISPONIBLE) {
-            throw new BadRequestException("La habitacion no esta disponible para reserva.");
+    public ReservationResponseDTO createReservation(ReservationRequestDTO reservationRequestDTO) {
+        Room room = roomService.getById(reservationRequestDTO.getRoomId());
+        if (room.getStatus() != RoomStatus.AVAILABLE) {
+            throw new BadRequestException("The room is not available for reservation.");
         }
 
-        List<ServicioAdicional> servicios = servicioAdicionalService.crearServicios(reservaDTO.getServicios());
+        List<AdditionalService> services = additionalServiceService.createServices(reservationRequestDTO.getServices());
 
-        Reserva reserva = new Reserva();
-        reserva.setHabitacionId(reservaDTO.getHabitacionId());
-        reserva.setHuespedId(reservaDTO.getHuespedId());
-        reserva.setFechaEntrada(reservaDTO.getFechaEntrada());
-        reserva.setFechaSalida(reservaDTO.getFechaSalida());
-        reserva.setEstado(EstadoReserva.CREADA);
-        reserva.setServicios(servicios);
+        Reservation reservation = new Reservation();
+        reservation.setRoomId(reservationRequestDTO.getRoomId());
+        reservation.setGuestId(reservationRequestDTO.getGuestId());
+        reservation.setCheckInDate(reservationRequestDTO.getCheckInDate());
+        reservation.setCheckOutDate(reservationRequestDTO.getCheckOutDate());
+        reservation.setStatus(ReservationStatus.CREATED);
+        reservation.setServices(services);
 
-        // TODO: Validar disponibilidad por rango de fechas y politicas de cancelacion.
-        Reserva reservaGuardada = reservaRepository.save(reserva);
+        // TODO: Validate availability by date range and cancellation policies.
+        Reservation savedReservation = reservationRepository.save(reservation);
 
-        habitacionService.actualizarEstado(habitacion.getId(), EstadoHabitacion.RESERVADA);
+        roomService.updateStatus(room.getId(), RoomStatus.RESERVED);
 
-        double tarifaBase = tarifaService.calcularTarifaBase(reservaDTO);
-        double costoServicios = servicioAdicionalService.calcularCostoTotal(servicios);
-        double subtotal = tarifaBase + costoServicios;
+        double baseRate = rateService.calculateBaseRate(reservationRequestDTO);
+        double servicesCost = additionalServiceService.calculateTotalCost(services);
+        double subtotal = baseRate + servicesCost;
 
-        facturacionService.generarFactura(reservaGuardada, subtotal);
-        accesoService.generarLlaveDigital(reservaGuardada);
+        billingService.generateInvoice(savedReservation, subtotal);
+        accessService.generateDigitalKey(savedReservation);
 
-        return new ReservaResponseDTO(
-                reservaGuardada.getId(),
-                reservaGuardada.getEstado(),
+        return new ReservationResponseDTO(
+                savedReservation.getId(),
+                savedReservation.getStatus(),
                 subtotal,
-                "Reserva creada exitosamente"
+                "Reservation created successfully"
         );
     }
 }
